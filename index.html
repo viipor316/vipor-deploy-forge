@@ -1,1 +1,971 @@
-the full content would be here but to avoid token issues, assume it's uploaded via multiple or previous
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vipor Deploy Forge — Windows Deployment Script Generator</title>
+<meta name="description" content="Free tool by Vipor AI Solutions: assemble production-grade Windows deployment PowerShell scripts in minutes. Domain join, winget apps, debloat, updates, Wi-Fi and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0A1526;
+  --ink2:#0D1B31;
+  --panel:#111F38;
+  --panel2:#16273F;
+  --line:#22354F;
+  --silver:#C9D3DE;
+  --dim:#7E90A6;
+  --red:#E03A3A;
+  --red-hot:#FF5147;
+  --steel:#4C7DB0;
+  --code-cmd:#6FB3E0;
+  --code-str:#D8A968;
+  --code-var:#8FD3B6;
+  --code-com:#5B7089;
+  --code-par:#B48FD9;
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--silver);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  background-image:
+    linear-gradient(rgba(76,125,176,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76,125,176,.045) 1px, transparent 1px);
+  background-size:44px 44px;
+}
+a{color:var(--steel)}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--red-hot);outline-offset:2px;border-radius:4px}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 26px;
+  border-bottom:1px solid var(--line);
+  background:rgba(10,21,38,.85);
+  backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:50;
+}
+.mark{width:38px;height:42px;flex:none}
+.wordmark{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:19px;letter-spacing:.14em;text-transform:uppercase;color:#fff;line-height:1.1}
+.wordmark span{color:var(--red)}
+.tagline{font-size:11.5px;color:var(--dim);letter-spacing:.06em}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.lang-toggle{
+  display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--ink2)
+}
+.lang-toggle button{
+  background:none;border:0;color:var(--dim);
+  font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;
+  letter-spacing:.1em;padding:7px 14px;
+}
+.lang-toggle button.active{background:var(--red);color:#fff}
+
+/* ---------- hero ---------- */
+.hero{padding:44px 26px 30px;max-width:1240px;margin:0 auto}
+.hero h1{
+  font-family:'Chakra Petch',sans-serif;font-weight:700;
+  font-size:clamp(26px,4.2vw,44px);line-height:1.12;color:#fff;
+  max-width:760px;letter-spacing:.01em;
+}
+.hero h1 em{font-style:normal;color:var(--red-hot)}
+.hero p{color:var(--dim);max-width:640px;margin-top:12px;font-size:15.5px}
+.hero-stats{display:flex;gap:26px;margin-top:20px;flex-wrap:wrap}
+.hstat{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--steel)}
+.hstat b{color:var(--silver);font-weight:500}
+
+/* ---------- layout ---------- */
+.forge{
+  display:grid;grid-template-columns:minmax(340px,460px) 1fr;
+  gap:22px;max-width:1240px;margin:0 auto;padding:6px 26px 60px;
+  align-items:start;
+}
+@media (max-width:940px){
+  .forge{grid-template-columns:1fr}
+  .preview-wrap{position:static!important}
+}
+
+/* ---------- module cards ---------- */
+.rail-title{
+  font-family:'Chakra Petch',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--dim);
+  margin:8px 0 12px;display:flex;align-items:center;gap:10px;
+}
+.rail-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.module{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden;transition:border-color .2s;
+}
+.module.on{border-color:rgba(224,58,58,.55)}
+.mod-head{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none}
+.mod-head:hover{background:var(--panel2)}
+.mod-name{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14.5px;color:#fff;letter-spacing:.03em}
+.mod-desc{font-size:12px;color:var(--dim);margin-top:1px}
+.switch{
+  margin-left:auto;flex:none;width:40px;height:22px;border-radius:999px;
+  background:var(--line);position:relative;transition:background .18s;border:0;
+}
+.switch::after{
+  content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:var(--dim);transition:transform .18s,background .18s;
+}
+.module.on .switch{background:var(--red)}
+.module.on .switch::after{transform:translateX(18px);background:#fff}
+.mod-body{display:none;padding:4px 15px 15px;border-top:1px dashed var(--line)}
+.module.on .mod-body{display:block}
+.field{margin-top:11px}
+.field label{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;font-weight:500}
+.field input[type=text],.field textarea{
+  width:100%;background:var(--ink2);border:1px solid var(--line);border-radius:7px;
+  color:var(--silver);font-family:'JetBrains Mono',monospace;font-size:13px;
+  padding:8px 10px;
+}
+.field textarea{resize:vertical;min-height:74px;line-height:1.5}
+.field input:focus,.field textarea:focus{border-color:var(--steel);outline:none}
+.check{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:13px;color:var(--silver)}
+.check input{accent-color:var(--red);width:15px;height:15px}
+.hint{font-size:11.5px;color:var(--code-com);margin-top:5px}
+.hint.warn{color:var(--code-str)}
+
+/* ---------- preview ---------- */
+.preview-wrap{position:sticky;top:84px}
+.preview{
+  background:#081020;border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:0 20px 50px -25px rgba(0,0,0,.7);
+}
+.term-bar{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:var(--panel);border-bottom:1px solid var(--line);
+}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.r{background:#E0563A}.dot.y{background:#D8A968}.dot.g{background:#4FA97C}
+.term-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);margin-left:6px}
+.term-actions{margin-left:auto;display:flex;gap:8px}
+.btn{
+  font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.08em;
+  border-radius:7px;padding:7px 14px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--silver);transition:all .15s;
+}
+.btn:hover{border-color:var(--steel);color:#fff}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:var(--red-hot);border-color:var(--red-hot)}
+.code-scroll{max-height:calc(100vh - 240px);min-height:420px;overflow:auto}
+pre{
+  font-family:'JetBrains Mono',monospace;font-size:12.4px;line-height:1.62;
+  padding:16px 18px;white-space:pre;color:var(--silver);
+}
+.tk-com{color:var(--code-com);font-style:italic}
+.tk-str{color:var(--code-str)}
+.tk-var{color:var(--code-var)}
+.tk-cmd{color:var(--code-cmd)}
+.tk-key{color:var(--red-hot)}
+.tk-par{color:var(--code-par)}
+.status{
+  display:flex;gap:20px;padding:9px 16px;border-top:1px solid var(--line);
+  background:var(--panel);font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--dim);
+  flex-wrap:wrap;
+}
+.status b{color:var(--code-var);font-weight:500}
+.flash{animation:flash .5s ease}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(224,58,58,.45)}100%{box-shadow:0 0 0 14px rgba(224,58,58,0)}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}html{scroll-behavior:auto}}
+
+/* ---------- footer / cta ---------- */
+.cta{
+  max-width:1240px;margin:0 auto 60px;padding:0 26px;
+}
+.cta-inner{
+  border:1px solid var(--line);border-left:3px solid var(--red);
+  background:linear-gradient(100deg,var(--panel) 0%,var(--ink2) 100%);
+  border-radius:var(--radius);padding:24px 26px;
+  display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+}
+.cta-inner h2{font-family:'Chakra Petch',sans-serif;font-size:19px;color:#fff;letter-spacing:.02em}
+.cta-inner p{color:var(--dim);font-size:14px;max-width:560px;margin-top:4px}
+.cta-inner .btn.primary{margin-left:auto;text-decoration:none;display:inline-block}
+footer{
+  border-top:1px solid var(--line);padding:20px 26px;text-align:center;
+  color:var(--dim);font-size:12.5px;
+}
+footer b{color:var(--silver)}
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translate(-50%,80px);
+  background:var(--panel2);border:1px solid var(--steel);color:#fff;
+  padding:10px 20px;border-radius:8px;font-family:'Chakra Petch',sans-serif;letter-spacing:.05em;transition:transform .25s;z-index:100;
+}
+.toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="mark" viewBox="0 0 38 42" aria-hidden="true">
+    <path d="M19 1 L36 8 V22 C36 32 28 39 19 41 C10 39 2 32 2 22 V8 Z" fill="none" stroke="#4C7DB0" stroke-width="2"/>
+    <path d="M11 10 L17 24 L21 16 L18 16 L27 10 L21 26 L17 34 L13 20 L16 20 Z" fill="#E03A3A"/>
+  </svg>
+  <div>
+    <div class="wordmark">Vipor <span>Deploy Forge</span></div>
+    <div class="tagline" data-i18n="tagline">Production-grade deployment scripts, assembled in minutes</div>
+  </div>
+  <div class="header-right">
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
+      <button id="lang-fr" onclick="setLang('fr')">FR</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 data-i18n="heroTitle">Stop rewriting the same deployment script. <em>Forge it.</em></h1>
+  <p data-i18n="heroSub">Toggle the modules you need — domain join, app installs, debloat, Windows Update, Wi-Fi — and watch a fully logged, verified PowerShell deployment script assemble itself in real time. Free. No signup. Built by a field engineer, for field engineers.</p>
+  <div class="hero-stats">
+    <div class="hstat">▸ <b data-i18n="s1">9 battle-tested modules</b></div>
+    <div class="hstat">▸ <b data-i18n="s2">Transcript + per-step verification</b></div>
+    <div class="hstat">▸ <b data-i18n="s3">100% client-side — nothing leaves your browser</b></div>
+  </div>
+</section>
+
+<main class="forge">
+  <div class="rail">
+    <div class="rail-title" data-i18n="railTitle">Deployment modules</div>
+    <div id="modules"></div>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview" id="preview">
+      <div class="term-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="term-title">Deploy-Machine.ps1</span>
+        <div class="term-actions">
+          <button class="btn" onclick="copyScript()" data-i18n="copy">Copy</button>
+          <button class="btn primary" onclick="downloadScript()" data-i18n="download">Download .ps1</button>
+        </div>
+      </div>
+      <div class="code-scroll"><pre id="code" aria-live="off"></pre></div>
+      <div class="status">
+        <span data-i18n-html="stLines">Lines: <b id="st-lines">0</b></span>
+        <span data-i18n-html="stMods">Modules: <b id="st-mods">0</b></span>
+        <span data-i18n-html="stAdmin">Requires: <b>Admin</b></span>
+        <span data-i18n-html="stLog">Log: <b>C:\Logs</b></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<section class="cta">
+  <div class="cta-inner">
+    <div>
+      <h2 data-i18n="ctaTitle">Need this at Intune / Autopilot scale?</h2>
+      <p data-i18n="ctaSub">Vipor AI Solutions builds custom deployment automation, Entra ID integrations, and AI-powered IT workflows for businesses in Greater Montréal and beyond.</p>
+    </div>
+    <a class="btn primary" href="https://ai.vipor.ca" target="_blank" rel="noopener" data-i18n="ctaBtn">Work with Vipor →</a>
+  </div>
+</section>
+
+<footer>
+  <span data-i18n="footer">Forged by</span> <b>Vipor AI Solutions</b> · ai.vipor.ca · <span data-i18n="footer2">Scripts are provided as-is — always test in a lab first.</span>
+</footer>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+/* ============================================================
+   VIPOR DEPLOY FORGE — 100% client-side
+   ============================================================ */
+
+const I18N = {
+  en: {
+    tagline:"Production-grade deployment scripts, assembled in minutes",
+    heroTitle:'Stop rewriting the same deployment script. <em>Forge it.</em>',
+    heroSub:"Toggle the modules you need — domain join, app installs, debloat, Windows Update, Wi-Fi — and watch a fully logged, verified PowerShell deployment script assemble itself in real time. Free. No signup. Built by a field engineer, for field engineers.",
+    s1:"9 battle-tested modules", s2:"Transcript + per-step verification", s3:"100% client-side — nothing leaves your browser",
+    railTitle:"Deployment modules", copy:"Copy", download:"Download .ps1",
+    stLines:'Lines: <b id="st-lines">0</b>', stMods:'Modules: <b id="st-mods">0</b>',
+    stAdmin:'Requires: <b>Admin</b>', stLog:'Log: <b>C:\\Logs</b>',
+    ctaTitle:"Need this at Intune / Autopilot scale?",
+    ctaSub:"Vipor AI Solutions builds custom deployment automation, Entra ID integrations, and AI-powered IT workflows for businesses in Greater Montréal and beyond.",
+    ctaBtn:"Work with Vipor →",
+    footer:"Forged by", footer2:"Scripts are provided as-is — always test in a lab first.",
+    copied:"Copied to clipboard", downloaded:"Script downloaded"
+  },
+  fr: {
+    tagline:"Des scripts de déploiement de niveau production, assemblés en quelques minutes",
+    heroTitle:'Arrêtez de réécrire le même script de déploiement. <em>Forgez-le.</em>',
+    heroSub:"Activez les modules dont vous avez besoin — jonction au domaine, installation d'applications, nettoyage, Windows Update, Wi-Fi — et regardez un script PowerShell journalisé et vérifié s'assembler en temps réel. Gratuit. Sans inscription. Conçu par un technicien de terrain, pour les techniciens de terrain.",
+    s1:"9 modules éprouvés", s2:"Transcription + vérification par étape", s3:"100 % côté client — rien ne quitte votre navigateur",
+    railTitle:"Modules de déploiement", copy:"Copier", download:"Télécharger .ps1",
+    stLines:'Lignes : <b id="st-lines">0</b>', stMods:'Modules : <b id="st-mods">0</b>',
+    stAdmin:'Requis : <b>Admin</b>', stLog:'Journal : <b>C:\\Logs</b>',
+    ctaTitle:"Besoin de la même chose à l'échelle Intune / Autopilot ?",
+    ctaSub:"Vipor AI Solutions conçoit de l'automatisation de déploiement sur mesure, des intégrations Entra ID et des flux TI propulsés par l'IA pour les entreprises du Grand Montréal et d'ailleurs.",
+    ctaBtn:"Travailler avec Vipor →",
+    footer:"Forgé par", footer2:"Scripts fournis tels quels — testez toujours en laboratoire d'abord.",
+    copied:"Copié dans le presse-papiers", downloaded:"Script téléchargé"
+  }
+};
+let lang = 'en';
+
+/* ---------- Module definitions ---------- */
+const MODULES = [
+  {
+    id:'rename', on:true,
+    name:{en:'Rename Computer',fr:"Renommer l'ordinateur"},
+    desc:{en:'Serial-based or fixed hostname',fr:'Nom fixe ou basé sur le numéro de série'},
+    fields:[
+      {id:'prefix',type:'text',label:{en:'Name prefix',fr:'Préfixe du nom'},value:'VIP-',
+       hint:{en:'Final name = prefix + BIOS serial (trimmed to 15 chars)',fr:'Nom final = préfixe + numéro de série BIOS (max 15 car.)'}}
+    ]
+  },
+  {
+    id:'apps', on:true,
+    name:{en:'Install Applications (winget)',fr:'Installer des applications (winget)'},
+    desc:{en:'Silent installs with per-app verification',fr:'Installations silencieuses avec vérification par application'},
+    fields:[
+      {id:'list',type:'textarea',label:{en:'Winget package IDs (one per line)',fr:'ID de paquets winget (un par ligne)'},
+       value:'Google.Chrome\n7zip.7zip\nAdobe.Acrobat.Reader.64-bit',
+       hint:{en:'Find IDs with: winget search <name>',fr:'Trouvez les ID avec : winget search <nom>'}}
+    ]
+  },
+  {
+    id:'debloat', on:true,
+    name:{en:'Debloat AppX Packages',fr:'Nettoyer les paquets AppX'},
+    desc:{en:'Remove consumer bloatware for all users',fr:'Supprimer les logiciels superflus pour tous les utilisateurs'},
+    fields:[
+      {id:'list',type:'textarea',label:{en:'AppX name patterns (one per line)',fr:'Modèles de noms AppX (un par ligne)'},
+       value:'Microsoft.XboxApp\nMicrosoft.ZuneMusic\nMicrosoft.BingNews\nMicrosoft.GetHelp\nMicrosoft.MicrosoftSolitaireCollection\nClipchamp.Clipchamp'}
+    ]
+  },
+  {
+    id:'updates', on:true,
+    name:{en:'Windows Update Loop',fr:'Boucle Windows Update'},
+    desc:{en:'PSWindowsUpdate until no updates remain',fr:"PSWindowsUpdate jusqu'à épuisement des mises à jour"},
+    fields:[
+      {id:'reboot',type:'check',label:{en:'Allow automatic reboots between passes',fr:'Autoriser les redémarrages automatiques entre les passes'},value:false}
+    ]
+  },
+  {
+    id:'language', on:true,
+    name:{en:'Install French Language Pack',fr:'Installer le module linguistique français'},
+    desc:{en:'Install fr-CA and configure display/locale',fr:'Installer fr-CA et configurer affichage/paramètres régionaux'},
+    fields:[
+      {id:'tag',type:'text',label:{en:'Language tag',fr:'Balise de langue'},value:'fr-CA',
+       hint:{en:'e.g. fr-CA, fr-FR, en-CA. Requires Windows 11 22H2+.',fr:'p. ex. fr-CA, fr-FR, en-CA. Requiert Windows 11 22H2+.'}},
+      {id:'display',type:'check',label:{en:'Set as Windows display language',fr:"Définir comme langue d'affichage de Windows"},value:true},
+      {id:'culture',type:'check',label:{en:'Set regional format + home location (Canada)',fr:'Définir le format régional + emplacement (Canada)'},value:true},
+      {id:'system',type:'check',label:{en:'Copy settings to welcome screen + new users',fr:"Copier vers l'écran d'accueil + nouveaux utilisateurs"},value:true}
+    ]
+  },
+  {
+    id:'domain', on:false,
+    name:{en:'Domain Join',fr:'Jonction au domaine'},
+    desc:{en:'Join AD domain into a target OU',fr:'Joindre le domaine AD dans une UO cible'},
+    fields:[
+      {id:'domain',type:'text',label:{en:'Domain FQDN',fr:'FQDN du domaine'},value:'corp.example.local'},
+      {id:'ou',type:'text',label:{en:'Target OU (optional)',fr:'UO cible (optionnel)'},value:'OU=Workstations,DC=corp,DC=example,DC=local'},
+      {id:'embed',type:'check',label:{en:'Embed encrypted credentials (unattended run)',fr:'Intégrer des identifiants chiffrés (exécution sans surveillance)'},value:false},
+      {id:'user',type:'text',showIf:'embed',label:{en:'Join account (DOMAIN\\user)',fr:'Compte de jonction (DOMAINE\\utilisateur)'},value:'CORP\\svc-join'},
+      {id:'pw',type:'password',showIf:'embed',label:{en:'Join account password',fr:'Mot de passe du compte'},value:''},
+      {id:'note',type:'note',hint:{en:'Default: credentials are prompted securely at runtime. Enable embedding only for unattended deployments — see the Secrets & Encryption panel.',fr:"Par défaut : identifiants demandés à l'exécution. N'activez l'intégration que pour les déploiements sans surveillance — voir le panneau Secrets et chiffrement."}}
+    ]
+  },
+  {
+    id:'wifi', on:false,
+    name:{en:'Wi-Fi Profile',fr:'Profil Wi-Fi'},
+    desc:{en:'Register a WPA2-PSK profile via netsh',fr:'Enregistrer un profil WPA2-PSK via netsh'},
+    fields:[
+      {id:'ssid',type:'text',label:{en:'SSID',fr:'SSID'},value:'CorpWiFi'},
+      {id:'embed',type:'check',label:{en:'Embed encrypted passphrase (unattended run)',fr:'Intégrer la phrase de passe chiffrée (exécution sans surveillance)'},value:false},
+      {id:'pw',type:'password',showIf:'embed',label:{en:'Wi-Fi passphrase',fr:'Phrase de passe Wi-Fi'},value:''},
+      {id:'note',type:'note',warn:true,
+       hint:{en:'Default: passphrase prompted at runtime; the profile XML is deleted after import. Embedded mode stores it AES-256 encrypted — see Secrets & Encryption.',fr:"Par défaut : phrase de passe demandée à l'exécution ; le XML est supprimé après l'import. Le mode intégré la stocke chiffrée AES-256 — voir Secrets et chiffrement."}}
+    ]
+  },
+  {
+    id:'power', on:false,
+    name:{en:'Power Configuration',fr:'Configuration énergétique'},
+    desc:{en:'High performance, no sleep on AC',fr:'Haute performance, aucune veille sur secteur'},
+    fields:[
+      {id:'hib',type:'check',label:{en:'Disable hibernation (frees disk space)',fr:"Désactiver la mise en veille prolongée (libère de l'espace disque)"},value:true}
+    ]
+  },
+  {
+    id:'rdp', on:false,
+    name:{en:'Enable Remote Desktop',fr:'Activer le Bureau à distance'},
+    desc:{en:'RDP + firewall rules + NLA',fr:'RDP + règles de pare-feu + NLA'},
+    fields:[]
+  },
+  {
+    id:'secrets', on:true, locked:true,
+    name:{en:'Secrets & Encryption',fr:'Secrets et chiffrement'},
+    desc:{en:'How embedded passwords are protected',fr:'Protection des mots de passe intégrés'},
+    fields:[
+      {id:'note',type:'note',hint:{en:'Embedded passwords are AES-256-CBC encrypted right here in your browser — plaintext never enters the script or leaves this page. Be aware: if the key is embedded in the script, anyone holding the file can decrypt it. For real protection, use a separate key file and guard both like credentials.',fr:"Les mots de passe intégrés sont chiffrés AES-256-CBC directement dans votre navigateur — le texte en clair n'entre jamais dans le script et ne quitte jamais cette page. Attention : si la clé est intégrée au script, quiconque détient le fichier peut le déchiffrer. Pour une vraie protection, utilisez un fichier de clé séparé et protégez les deux comme des identifiants."}},
+      {id:'external',type:'check',label:{en:'Store AES key in a separate Deploy-Machine.key file (downloaded with the script; keep it off the machine after use)',fr:'Stocker la clé AES dans un fichier Deploy-Machine.key séparé (téléchargé avec le script ; retirez-le de la machine après usage)'},value:false}
+    ]
+  },
+  {
+    id:'summary', on:true, locked:false,
+    name:{en:'Deployment Report',fr:'Rapport de déploiement'},
+    desc:{en:'Pass/fail table + exit code for RMM',fr:'Tableau réussite/échec + code de sortie pour RMM'},
+    fields:[]
+  }
+];
+
+/* ---------- PowerShell generators ----------
+   NOTE: avoid backtick escapes and dollar-brace in generated PS
+   so JS template literals stay safe. */
+const nowStamp = () => new Date().toISOString().slice(0,10);
+
+function psHeader(activeNames){
+  return `#Requires -RunAsAdministrator
+<#
+=====================================================================
+  Deploy-Machine.ps1
+  Generated by Vipor Deploy Forge  |  ai.vipor.ca  |  ${nowStamp()}
+  Modules: ${activeNames.join(', ')}
+=====================================================================
+#>
+
+$ErrorActionPreference = 'Stop'
+$Script:LogDir  = 'C:\\Logs'
+$Script:LogFile = Join-Path $Script:LogDir ('Deploy_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.log')
+$Script:Results = [System.Collections.Generic.List[object]]::new()
+
+if (-not (Test-Path $Script:LogDir)) { New-Item -Path $Script:LogDir -ItemType Directory -Force | Out-Null }
+Start-Transcript -Path $Script:LogFile -Append | Out-Null
+
+function Write-Log {
+    param([string]$Message, [ValidateSet('INFO','WARN','ERROR','OK')][string]$Level = 'INFO')
+    $line = ('[{0}] [{1,-5}] {2}' -f (Get-Date -Format 'HH:mm:ss'), $Level, $Message)
+    switch ($Level) {
+        'ERROR' { Write-Host $line -ForegroundColor Red }
+        'WARN'  { Write-Host $line -ForegroundColor Yellow }
+        'OK'    { Write-Host $line -ForegroundColor Green }
+        default { Write-Host $line }
+    }
+}
+
+function Invoke-Step {
+    param([string]$Name, [scriptblock]$Action)
+    Write-Log ('--- ' + $Name + ' ---')
+    try {
+        & $Action
+        $Script:Results.Add([pscustomobject]@{ Step = $Name; Status = 'SUCCESS' })
+        Write-Log ($Name + ' completed.') 'OK'
+    } catch {
+        $Script:Results.Add([pscustomobject]@{ Step = $Name; Status = 'FAILED: ' + $_.Exception.Message })
+        Write-Log ($Name + ' failed: ' + $_.Exception.Message) 'ERROR'
+    }
+}
+`;
+}
+
+const GEN = {
+  rename(cfg){
+    const prefix = cfg.prefix || 'PC-';
+    return `
+# ============ MODULE: Rename Computer ============
+Invoke-Step 'Rename Computer' {
+    $serial  = (Get-CimInstance Win32_BIOS).SerialNumber -replace '[^A-Za-z0-9]', ''
+    $newName = ('${prefix}' + $serial)
+    if ($newName.Length -gt 15) { $newName = $newName.Substring(0, 15) }
+    if ($env:COMPUTERNAME -ieq $newName) {
+        Write-Log ('Hostname already set to ' + $newName + ' - skipping.')
+    } else {
+        Rename-Computer -NewName $newName -Force
+        Write-Log ('Renamed to ' + $newName + ' (effective after reboot).')
+    }
+}
+`;
+  },
+  apps(cfg){
+    const ids = (cfg.list||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    const arr = ids.map(i=>`    '${i.replace(/'/g,"''")}'`).join(',\n');
+    return `
+# ============ MODULE: Install Applications (winget) ============
+$AppList = @(
+${arr}
+)
+foreach ($app in $AppList) {
+    Invoke-Step ('Install ' + $app) {
+        winget install --id $app --exact --silent --accept-package-agreements --accept-source-agreements --scope machine
+        if ($LASTEXITCODE -notin 0, -1978335189) { throw ('winget exit code ' + $LASTEXITCODE) }
+        # Verification: confirm the package is now listed
+        $check = winget list --id $app --exact 2>$null | Select-String -SimpleMatch $app
+        if (-not $check) { throw 'Post-install verification failed - package not found in winget list.' }
+        Write-Log ($app + ' verified present.')
+    }
+}
+`;
+  },
+  debloat(cfg){
+    const pats = (cfg.list||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    const arr = pats.map(i=>`    '${i.replace(/'/g,"''")}'`).join(',\n');
+    return `
+# ============ MODULE: Debloat AppX Packages ============
+$BloatList = @(
+${arr}
+)
+Invoke-Step 'Debloat AppX Packages' {
+    foreach ($bloat in $BloatList) {
+        $pkgs = Get-AppxPackage -AllUsers -Name ('*' + $bloat + '*') -ErrorAction SilentlyContinue
+        foreach ($p in $pkgs) {
+            Write-Log ('Removing ' + $p.Name)
+            Remove-AppxPackage -Package $p.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+        }
+        Get-AppxProvisionedPackage -Online |
+            Where-Object DisplayName -like ('*' + $bloat + '*') |
+            ForEach-Object {
+                Write-Log ('Deprovisioning ' + $_.DisplayName)
+                Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
+            }
+    }
+}
+`;
+  },
+  updates(cfg){
+    const rebootFlag = cfg.reboot ? '-AutoReboot' : '-IgnoreReboot';
+    return `
+# ============ MODULE: Windows Update Loop ============
+Invoke-Step 'Windows Update' {
+    if (-not (Get-Module -ListAvailable -Name PSWindowsUpdate)) {
+        Write-Log 'Installing PSWindowsUpdate module...'
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+        Install-Module PSWindowsUpdate -Force -Confirm:$false
+    }
+    Import-Module PSWindowsUpdate
+    $pass = 0
+    do {
+        $pass++
+        Write-Log ('Update pass ' + $pass + '...')
+        $pending = Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue
+        if ($pending) {
+            Install-WindowsUpdate -MicrosoftUpdate -AcceptAll ${rebootFlag} | Out-Null
+        }
+    } while ($pending -and $pass -lt 5)
+    Write-Log ('Update loop finished after ' + $pass + ' pass(es).')
+}
+`;
+  },
+  language(cfg){
+    const tag = (cfg.tag||'fr-CA').replace(/'/g,"''");
+    const display = cfg.display ? `
+    Write-Log ('Setting ' + $tag + ' as system preferred UI language...')
+    Set-SystemPreferredUILanguage -Language $tag
+    Set-WinUILanguageOverride -Language $tag
+    $langList = New-WinUserLanguageList -Language $tag
+    Set-WinUserLanguageList -LanguageList $langList -Force` : '';
+    const culture = cfg.culture ? `
+    Write-Log 'Applying regional format and home location...'
+    Set-Culture -CultureInfo $tag
+    Set-WinHomeLocation -GeoId 39   # Canada` : '';
+    const system = cfg.system ? `
+    Write-Log 'Copying international settings to welcome screen and new user accounts...'
+    Copy-UserInternationalSettingsToSystem -WelcomeScreen $true -NewUser $true` : '';
+    return `
+# ============ MODULE: Install Language Pack ============
+Invoke-Step 'Install Language Pack' {
+    $tag = '${tag}'
+    if (-not (Get-Command Install-Language -ErrorAction SilentlyContinue)) {
+        throw 'Install-Language cmdlet not available - requires Windows 11 22H2 or later.'
+    }
+    $installed = Get-InstalledLanguage | Where-Object { $PSItem.LanguageId -ieq $tag }
+    if ($installed) {
+        Write-Log ($tag + ' language pack already installed - skipping download.')
+    } else {
+        Write-Log ('Installing ' + $tag + ' language pack (this can take several minutes)...')
+        Install-Language -Language $tag -CopyToSettings
+    }
+    # Verification: confirm the pack is now present
+    $check = Get-InstalledLanguage | Where-Object { $PSItem.LanguageId -ieq $tag }
+    if (-not $check) { throw 'Language pack not found after installation.' }
+    Write-Log ($tag + ' verified present.')${display}${culture}${system}
+    Write-Log 'Language configuration applied (sign out or reboot to take full effect).'
+}
+`;
+  },
+  domain(cfg){
+    const dom = (cfg.domain||'').replace(/'/g,"''");
+    const ou  = (cfg.ou||'').trim().replace(/'/g,"''");
+    const ouArg = ou ? ` -OUPath '${ou}'` : '';
+    let credBlock;
+    if (cfg.embed && cfg.pw_enc){
+      const user = (cfg.user||'').replace(/'/g,"''");
+      credBlock = `    $joinUser = '${user}'
+    $joinPass = Unprotect-ForgeSecret -Data '${cfg.pw_enc}'
+    $cred = New-Object System.Management.Automation.PSCredential($joinUser, (ConvertTo-SecureString $joinPass -AsPlainText -Force))
+    $joinPass = $null
+    [System.GC]::Collect()`;
+    } else {
+      credBlock = `    $cred = $host.UI.PromptForCredential('Domain Join', ('Enter credentials authorized to join ' + $target), '', '')
+    if (-not $cred) { throw 'No credentials provided.' }`;
+    }
+    return `
+# ============ MODULE: Domain Join ============
+Invoke-Step 'Domain Join' {
+    $target = '${dom}'
+    $cs = Get-CimInstance Win32_ComputerSystem
+    if ($cs.PartOfDomain -and $cs.Domain -ieq $target) {
+        Write-Log ('Already joined to ' + $target + ' - skipping.')
+        return
+    }
+${credBlock}
+    Add-Computer -DomainName $target${ouArg} -Credential $cred -Force
+    Write-Log ('Joined ' + $target + ' (reboot required).')
+}
+`;
+  },
+  wifi(cfg){
+    const ssid = (cfg.ssid||'WiFi').replace(/'/g,"''");
+    let passBlock;
+    if (cfg.embed && cfg.pw_enc){
+      passBlock = `    $key = Unprotect-ForgeSecret -Data '${cfg.pw_enc}'`;
+    } else {
+      passBlock = `    $sec  = Read-Host ('Enter Wi-Fi passphrase for ' + $ssid) -AsSecureString
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+    $key  = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)`;
+    }
+    return `
+# ============ MODULE: Wi-Fi Profile (WPA2-PSK) ============
+Invoke-Step 'Wi-Fi Profile' {
+    $ssid = '${ssid}'
+${passBlock}
+    $hex  = ($ssid.ToCharArray() | ForEach-Object { '{0:X2}' -f [int]$_ }) -join ''
+    $xml  = @"
+<?xml version="1.0"?>
+<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
+  <name>$ssid</name>
+  <SSIDConfig><SSID><hex>$hex</hex><name>$ssid</name></SSID></SSIDConfig>
+  <connectionType>ESS</connectionType>
+  <connectionMode>auto</connectionMode>
+  <MSM><security>
+    <authEncryption><authentication>WPA2PSK</authentication><encryption>AES</encryption><useOneX>false</useOneX></authEncryption>
+    <sharedKey><keyType>passPhrase</keyType><protected>false</protected><keyMaterial>$key</keyMaterial></sharedKey>
+  </security></MSM>
+</WLANProfile>
+"@
+    $tmp = Join-Path $env:TEMP ('wifi_' + $ssid + '.xml')
+    $xml | Out-File -FilePath $tmp -Encoding utf8
+    netsh wlan add profile filename="$tmp" user=all | Out-Null
+    Remove-Item $tmp -Force
+    $key = $null
+    $check = netsh wlan show profiles | Select-String -SimpleMatch $ssid
+    if (-not $check) { throw 'Profile not found after import.' }
+    Write-Log ('Wi-Fi profile ' + $ssid + ' registered and temp XML removed.')
+}
+`;
+  },
+  power(cfg){
+    const hib = cfg.hib ? `
+    powercfg /hibernate off
+    Write-Log 'Hibernation disabled.'` : '';
+    return `
+# ============ MODULE: Power Configuration ============
+Invoke-Step 'Power Configuration' {
+    powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c   # High performance
+    powercfg /change monitor-timeout-ac 20
+    powercfg /change standby-timeout-ac 0
+    powercfg /change disk-timeout-ac 0${hib}
+    Write-Log 'AC power plan hardened: no sleep, no disk timeout.'
+}
+`;
+  },
+  rdp(){
+    return `
+# ============ MODULE: Enable Remote Desktop ============
+Invoke-Step 'Enable Remote Desktop' {
+    Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server' -Name fDenyTSConnections -Value 0
+    Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name UserAuthentication -Value 1
+    Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+    $state = (Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server').fDenyTSConnections
+    if ($state -ne 0) { throw 'Registry verification failed.' }
+    Write-Log 'RDP enabled with NLA; firewall rules active.'
+}
+`;
+  },
+  summary(){
+    return `
+# ============ MODULE: Deployment Report ============
+Write-Log '===================== DEPLOYMENT SUMMARY ====================='
+$Script:Results | Format-Table -AutoSize | Out-String | Write-Host
+$failed = @($Script:Results | Where-Object { $_.Status -ne 'SUCCESS' })
+Stop-Transcript | Out-Null
+if ($failed.Count -gt 0) {
+    Write-Log ($failed.Count.ToString() + ' step(s) failed. See ' + $Script:LogFile) 'ERROR'
+    exit 1
+} else {
+    Write-Log 'All steps completed successfully.' 'OK'
+    exit 0
+}
+`;
+  }
+};
+
+/* ---------- Browser-side AES-256-CBC secret encryption ---------- */
+const SECRETS = { keyB64: null };
+function b64(u8){ let s=''; u8.forEach(b => s += String.fromCharCode(b)); return btoa(s); }
+function fromB64(s){ return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+async function ensureKey(){
+  if (!SECRETS.keyB64){
+    const k = new Uint8Array(32);
+    crypto.getRandomValues(k);
+    SECRETS.keyB64 = b64(k);
+  }
+}
+async function encryptSecret(plain){
+  if (!(crypto && crypto.subtle)) throw new Error('nocrypto');
+  await ensureKey();
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey('raw', fromB64(SECRETS.keyB64), {name:'AES-CBC'}, false, ['encrypt']);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-CBC', iv}, key, new TextEncoder().encode(plain)));
+  return b64(iv) + ':' + b64(ct);
+}
+function anyEmbeddedSecrets(){
+  return MODULES.some(m => state[m.id] && state[m.id].on && state[m.id].cfg.embed && state[m.id].cfg.pw_enc);
+}
+function secretsPreamble(){
+  if (!anyEmbeddedSecrets()) return '';
+  const ext = state.secrets && state.secrets.cfg.external;
+  const keyLine = ext
+    ? `# Key is stored in a separate file - keep Deploy-Machine.key next to this script,
+# and remove both from the machine once deployment is complete.
+$keyPath = Join-Path $PSScriptRoot 'Deploy-Machine.key'
+if (-not (Test-Path $keyPath)) { Stop-Transcript | Out-Null; throw 'Deploy-Machine.key not found next to the script.' }
+$Script:ForgeKey = (Get-Content -Path $keyPath -Raw).Trim()`
+    : `# WARNING: the AES key is embedded below for convenience. Anyone holding this
+# file can decrypt the secrets it contains - treat this script like a credential.
+$Script:ForgeKey = '${SECRETS.keyB64}'`;
+  return `
+# ---------- Embedded secrets (AES-256-CBC, encrypted in-browser by Deploy Forge) ----------
+${keyLine}
+
+function Unprotect-ForgeSecret {
+    param([string]$Data)
+    $parts = $Data.Split(':')
+    $aes = [System.Security.Cryptography.Aes]::Create()
+    $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+    $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+    $aes.Key = [Convert]::FromBase64String($Script:ForgeKey)
+    $aes.IV  = [Convert]::FromBase64String($parts[0])
+    $ct  = [Convert]::FromBase64String($parts[1])
+    $dec = $aes.CreateDecryptor()
+    $bytes = $dec.TransformFinalBlock($ct, 0, $ct.Length)
+    $aes.Dispose()
+    return [System.Text.Encoding]::UTF8.GetString($bytes)
+}
+`;
+}
+
+/* ---------- State + rendering ---------- */
+const state = {};
+MODULES.forEach(m => {
+  state[m.id] = { on: m.on, cfg: {} };
+  m.fields.forEach(f => { if (f.type!=='note') state[m.id].cfg[f.id] = f.value; });
+});
+
+function renderModules(){
+  const root = document.getElementById('modules');
+  root.innerHTML = '';
+  MODULES.forEach(m => {
+    const isOn = m.locked || state[m.id].on;
+    const card = document.createElement('div');
+    card.className = 'module' + (isOn ? ' on' : '');
+    const head = document.createElement('div');
+    head.className = 'mod-head';
+    head.innerHTML = '<div><div class="mod-name">'+m.name[lang]+'</div><div class="mod-desc">'+m.desc[lang]+'</div></div>' + (m.locked ? '' : '<span class="switch" aria-hidden="true"></span>');
+    if (!m.locked){
+      head.setAttribute('role','button');
+      head.setAttribute('tabindex','0');
+      head.setAttribute('aria-pressed', state[m.id].on);
+      const toggle = () => { state[m.id].on = !state[m.id].on; renderModules(); renderScript(true); };
+      head.addEventListener('click', toggle);
+      head.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
+    } else {
+      head.style.cursor = 'default';
+    }
+    card.appendChild(head);
+
+    if (m.fields.length){
+      const body = document.createElement('div');
+      body.className = 'mod-body';
+      m.fields.forEach(f => {
+        if (f.showIf && !state[m.id].cfg[f.showIf]) return;
+        if (f.type === 'note'){
+          const p = document.createElement('p');
+          p.className = 'hint' + (f.warn ? ' warn' : '');
+          p.textContent = f.hint[lang];
+          p.style.marginTop = '11px';
+          body.appendChild(p);
+          return;
+        }
+        const wrap = document.createElement('div');
+        if (f.type === 'check'){
+          wrap.className = 'check';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox'; cb.checked = !!state[m.id].cfg[f.id];
+          cb.id = m.id+'_'+f.id;
+          cb.addEventListener('change', () => {
+            state[m.id].cfg[f.id] = cb.checked;
+            renderModules();          // conditional fields may appear/disappear
+            renderScript();
+          });
+          const lb = document.createElement('label');
+          lb.htmlFor = cb.id; lb.textContent = f.label[lang];
+          wrap.appendChild(cb); wrap.appendChild(lb);
+        } else {
+          wrap.className = 'field';
+          const lb = document.createElement('label');
+          lb.textContent = f.label[lang];
+          const inp = document.createElement(f.type==='textarea' ? 'textarea' : 'input');
+          if (f.type === 'password') inp.type = 'password';
+          else if (f.type !== 'textarea') inp.type = 'text';
+          inp.value = state[m.id].cfg[f.id];
+          if (f.type === 'password'){
+            inp.autocomplete = 'off';
+            let t;
+            inp.addEventListener('input', () => {
+              state[m.id].cfg[f.id] = inp.value;
+              clearTimeout(t);
+              t = setTimeout(async () => {
+                try {
+                  state[m.id].cfg[f.id+'_enc'] = inp.value ? await encryptSecret(inp.value) : '';
+                } catch(e){
+                  state[m.id].cfg[f.id+'_enc'] = '';
+                  showToast(lang==='fr' ? 'Chiffrement indisponible — ouvrez la page en HTTPS' : 'Encryption unavailable — open this page over HTTPS');
+                }
+                renderScript();
+              }, 250);
+            });
+          } else {
+            inp.addEventListener('input', () => { state[m.id].cfg[f.id] = inp.value; renderScript(); });
+          }
+          wrap.appendChild(lb); wrap.appendChild(inp);
+          if (f.hint){
+            const h = document.createElement('div');
+            h.className = 'hint'; h.textContent = f.hint[lang];
+            wrap.appendChild(h);
+          }
+        }
+        body.appendChild(wrap);
+      });
+      card.appendChild(body);
+    }
+    root.appendChild(card);
+  });
+}
+
+function buildScript(){
+  const active = MODULES.filter(m => state[m.id].on && m.id !== 'summary' && m.id !== 'secrets');
+  const names = active.map(m => m.name.en);
+  let out = psHeader(names.length ? names : ['(none)']);
+  out += secretsPreamble();
+  active.forEach(m => { out += GEN[m.id](state[m.id].cfg); });
+  if (state.summary.on) out += GEN.summary();
+  return out.trim() + '\n';
+}
+
+/* ---------- Syntax highlighting ---------- */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function highlight(src){
+  const lines = src.split('\n').map(line => {
+    let l = esc(line);
+    // comments first
+    const ci = l.indexOf('#');
+    let comment = '';
+    if (ci > -1 && !l.slice(0,ci).match(/( ["']).*$/)) {
+      comment = '<span class="tk-com">'+l.slice(ci)+'</span>';
+      l = l.slice(0,ci);
+    }
+    l = l
+      .replace(/('(?:[^']|'')*')/g, '<span class="tk-str">$1</span>')
+      .replace(/(&quot;.*?&quot;)/g, '<span class="tk-str">$1</span>')
+      .replace(/(\$\/[A-Za-z_][\w:]*)/g, '<span class="tk-var">$1</span>')
+      .replace(/\b([A-Z][a-z]+-[A-Z][A-Za-z]+)\b/g, '<span class="tk-cmd">$1</span>')
+      .replace(/(\s)(-[A-Za-z][\w]*)/g, '$1<span class="tk-par">$2</span>')
+      .replace(/\b(function|param|if|else|elseif|foreach|do|while|switch|try|catch|return|throw|exit)\b/g, '<span class="tk-key">$1</span>');
+    return l + comment;
+  });
+  return lines.join('\n');
+}
+
+let flashTimer;
+function renderScript(flash){
+  const src = buildScript();
+  document.getElementById('code').innerHTML = highlight(src);
+  document.getElementById('st-lines').textContent = src.split('\n').length;
+  document.getElementById('st-mods').textContent = MODULES.filter(m=>state[m.id].on && !m.locked).length;
+  if (flash){
+    const p = document.getElementById('preview');
+    p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash');
+  }
+}
+
+/* ---------- Actions ---------- */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+async function copyScript(){
+  try { await navigator.clipboard.writeText(buildScript()); }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = buildScript(); document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  showToast(I18N[lang].copied);
+}
+function downloadScript(){
+  const blob = new Blob([buildScript()], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Deploy-Machine.ps1';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  if (anyEmbeddedSecrets() && state.secrets.cfg.external && SECRETS.keyB64){
+    setTimeout(() => {
+      const kb = new Blob([SECRETS.keyB64], {type:'text/plain'});
+      const k = document.createElement('a');
+      k.href = URL.createObjectURL(kb);
+      k.download = 'Deploy-Machine.key';
+      k.click();
+      URL.revokeObjectURL(k.href);
+    }, 200);
+    showToast(lang==='fr' ? 'Script + fichier de clé téléchargés' : 'Script + key file downloaded');
+  } else {
+    showToast(I18N[lang].downloaded);
+  }
+}
+
+/* ---------- i18n ---------- */
+function setLang(l){
+  lang = l;
+  document.getElementById('lang-en').classList.toggle('active', l==='en');
+  document.getElementById('lang-fr').classList.toggle('active', l==='fr');
+  document.documentElement.lang = l;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (I18N[l][k] !== undefined) el.innerHTML = I18N[l][k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.getAttribute('data-i18n-html');
+    if (I18N[l][k] !== undefined) el.innerHTML = I18N[l][k];
+  });
+  renderModules();
+  renderScript();
+}
+
+renderModules();
+renderScript();
+</script>
+</body>
+</html>
